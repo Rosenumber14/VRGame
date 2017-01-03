@@ -1,10 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class EnemySpawner : MonoBehaviour {
     public Enemy EnemyPrefab;
     public Transform TargetDestination;
+    const int MAX_ENEMIES = 1;
 
+    private List<Enemy> enemies = new List<Enemy>();
     // Use this for initialization
     void Start () {
         var targetPosition = TargetDestination.position;
@@ -22,8 +25,19 @@ public class EnemySpawner : MonoBehaviour {
     IEnumerator SpawnEnemy()
     {
         yield return new WaitForSeconds(5);
-        var enemy = (Enemy)Instantiate(EnemyPrefab, transform.position, transform.rotation);
-        enemy.TargetDestination = TargetDestination;
+        if (enemies.Count < MAX_ENEMIES)
+        {
+            var enemy = (Enemy)Instantiate(EnemyPrefab, transform.position, transform.rotation);
+            enemy.Spawner = this;
+            enemy.Died += Died;
+            enemies.Add(enemy);
+            enemy.TargetDestination = TargetDestination;
+        }
         StartCoroutine(SpawnEnemy());
+    }
+
+    void Died(Enemy enemy)
+    {
+        enemies.Remove(enemy);
     }
 }

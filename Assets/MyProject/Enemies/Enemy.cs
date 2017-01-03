@@ -13,6 +13,9 @@ public class Enemy : HealthTeamAndDamage {
     public Transform TargetDestination;
     private Animations currentAnimation = Animations.run;
     private Animation animationComponent;
+    public EnemySpawner Spawner;
+    public delegate void EnemyDied(Enemy enemy);
+    public event EnemyDied Died;
 
     // Use this for initialization
     void Start () {
@@ -59,6 +62,7 @@ public class Enemy : HealthTeamAndDamage {
             Destroy(GetComponent<BoxCollider>());
             Destroy(GetComponent<Rigidbody>());
             SetAnimation(Animations.die);
+            Died(this);
         }
         else
         {
