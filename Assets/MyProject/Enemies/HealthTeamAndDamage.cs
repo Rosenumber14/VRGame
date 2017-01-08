@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace Assets.MyProject.Enemies
 {
@@ -14,26 +15,33 @@ namespace Assets.MyProject.Enemies
         public float CurrentHealth = 100;
         public Teams Team = Teams.Enemy;
         public int Damage = 0;
-
         public HealthTeamAndDamage enemyCollider;
         
         void Update()
         {
-            if(enemyCollider != null)
+            if(enemyCollider != null && CurrentHealth > 0)
                 DoDamage(enemyCollider);
 
             UpdateFn();
         }
 
-        //unity function
         public void OnTriggerEnter(Collider collider)
         {
-            var enemy = collider.GetComponent<HealthTeamAndDamage>(); //do damage to any object that takes health
-            if(enemy)
+            if (collider.name != "Terrain")
             {
-                enemyCollider = enemy;
+                var enemy = collider.GetComponent<HealthTeamAndDamage>(); //do damage to any object that takes health
+                if (enemy)
+                {
+                    enemyCollider = enemy;
+                }
             }
         }
+
+        private void Target_Died(Enemy enemy)
+        {
+            enemyCollider = null;
+        }
+
         public void OnTriggerExit(Collider collider)
         {
             enemyCollider = null;
