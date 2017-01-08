@@ -9,7 +9,10 @@ public class Spell : HealthTeamAndDamage {
 	// Use this for initialization
 	void Start () {
         _rigidBody = GetComponent<Rigidbody>();
-        Controller.TriggerPressed += ControllerTriggerPressed;
+        if (Controller)
+        {
+            Controller.TriggerPressed += ControllerTriggerPressed;
+        }
     }
 	
 	// Update is called once per frame

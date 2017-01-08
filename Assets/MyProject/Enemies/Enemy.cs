@@ -59,8 +59,6 @@ public class Enemy : HealthTeamAndDamage {
 
         if (CurrentHealth <= 0)
         {
-            Destroy(GetComponent<BoxCollider>());
-            Destroy(GetComponent<Rigidbody>());
             SetAnimation(Animations.die);
             Died(this);
         }
