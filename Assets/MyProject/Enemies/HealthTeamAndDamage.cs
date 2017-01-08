@@ -15,6 +15,7 @@ namespace Assets.MyProject.Enemies
         public float CurrentHealth = 100;
         public Teams Team = Teams.Enemy;
         public int Damage = 0;
+        public bool CanGetHit = true;
         public HealthTeamAndDamage enemyCollider;
         
         void Update()
@@ -37,11 +38,6 @@ namespace Assets.MyProject.Enemies
             }
         }
 
-        private void Target_Died(Enemy enemy)
-        {
-            enemyCollider = null;
-        }
-
         public void OnTriggerExit(Collider collider)
         {
             enemyCollider = null;
@@ -54,7 +50,7 @@ namespace Assets.MyProject.Enemies
 
         public virtual bool TakeDamage(float damage, Teams team)
         {
-            if (damage == 0)
+            if (damage == 0 || !CanGetHit)
                 return false;
             if (FriendlyFire || Team != team)
             {

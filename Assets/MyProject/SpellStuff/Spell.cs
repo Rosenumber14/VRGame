@@ -16,7 +16,7 @@ public class Spell : HealthTeamAndDamage {
     }
 	
 	// Update is called once per frame
-	void Update () {
+	public override void UpdateFn() {
 	
 	}
 
