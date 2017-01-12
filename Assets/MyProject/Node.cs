@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace Assets.MyProject
@@ -7,8 +8,10 @@ namespace Assets.MyProject
     {
         public Node PrevNode;
         private Node nextNode;
+        private List<Node> Branches;
+        public bool IsBranching = false; //means next node that is created will be a branch node off this node
 
-        public delegate void Create(Vector3 position, bool isLoading = false);
+        public delegate Node Create(Vector3 position, bool isLoading = false);
 
         public static Node CreateNode(Vector3 localPosition, Transform parent, Node prevNode = null, bool isLoading = false)
         {
@@ -32,8 +35,17 @@ namespace Assets.MyProject
         //returns the new node
         public Node AddNextNode(Vector3 localPosition, bool isLoading)
         {
-            nextNode = CreateNode(localPosition, transform.parent, this, isLoading);
-            return nextNode;
+            var node = CreateNode(localPosition, transform.parent, this, isLoading);
+
+            if (IsBranching)
+            {
+                Branches.Add(node);
+                IsBranching = false;
+            }
+            else
+                nextNode = node;
+
+            return node;
         }
 
         public Node GetPrevNodeIfColliderMatchesThisNode(Collider collider)
@@ -55,17 +67,34 @@ namespace Assets.MyProject
             if (File.Exists(fileName))
             {
                 var sr = File.OpenText(fileName);
-                var line = sr.ReadLine();
-                while (line != null)
-                {
-                    create(StringToVector3(line), true);
-                    line = sr.ReadLine();
-                }
+                LoadNodes(sr, create);
                 sr.Close();
             }
             else {
                 Debug.Log("Could not Open the file: " + fileName + " for reading.");
                 return;
+            }
+        }
+
+        public static void LoadNodes(StreamReader reader, Create create, Node nodeBranchingFrom = null)
+        {
+            Node lastSpawn = null;
+            var line = reader.ReadLine();
+            while (line != null && (lastSpawn == null || line != "}")) 
+            {
+                if (line.StartsWith("(") && line.EndsWith(")"))
+                {
+                    var pos = StringToVector3(line);
+                    lastSpawn = lastSpawn != null ? lastSpawn.AddNextNode(pos, true) : create(pos, true);
+                }
+
+                if (line.StartsWith("Branch:"))
+                {
+                    lastSpawn.IsBranching = true;
+                    LoadNodes(reader, create, lastSpawn);
+                }
+                ///create(StringToVector3(line), true);
+                line = reader.ReadLine();
             }
         }
         public void SaveNodes(string fileName)
@@ -76,15 +105,46 @@ namespace Assets.MyProject
             }
 
             var sr = File.CreateText(fileName);
-            Vector3? prevPosition = transform.localPosition;
-            var prevNode = PrevNode;
-            while (prevPosition.HasValue)
-            {
-                sr.WriteLine(prevPosition.Value.ToString("F3"));
-                prevPosition = prevNode != null ? prevNode.transform.localPosition : (Vector3?)null;
-                prevNode = prevNode != null ? prevNode.PrevNode : null;
-            }
+            SaveNodes(sr, true); //by default when we save assume we called 'saveNodes' on the last node that was created means we will be using (prevNode) when saving
             sr.Close();
+        }
+
+        public void SaveNodes(StreamWriter writer, bool saveBackwards)
+        {
+            if (saveBackwards)
+            {
+                var prevNode = this;
+                while (prevNode != null)
+                {
+                    prevNode.SaveNode(writer);
+                    prevNode = prevNode.PrevNode;
+                }
+                return;
+            }
+
+            var nextNode = this;
+            while (nextNode != null)
+            {
+                nextNode.SaveNode(writer);
+                nextNode = nextNode.nextNode;
+            }
+        }
+
+        public void SaveNode(StreamWriter writer)
+        {
+            writer.WriteLine(transform.localPosition.ToString("F3"));
+
+            if (Branches.Count > 0)
+            {
+                writer.WriteLine("Branches: {");
+                foreach (var branch in Branches)
+                {
+                    writer.WriteLine("Branch: {");
+                    branch.SaveNodes(writer, false); //because a branch is the 'start' of a list, we need to save going forwards (nextnode)
+                    writer.WriteLine("}");
+                }
+                writer.WriteLine("}");
+            }
         }
 
         public static Vector3 StringToVector3(string sVector)

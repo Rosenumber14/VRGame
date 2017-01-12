@@ -11,20 +11,23 @@ namespace Assets.MyProject
         public bool IsDebugMode = false;
         public bool IsCreating = true;
         public string FileName = "savedNodes";
-        public bool IsGripping = false;
+        public bool IsHoldingTrigger = false;
 
         public Spell CurrentCastingSpell;
-
+        public Node touchingNode; //Node the controller is currently touching (if any)
         private Node lastSpawn;
         private List<GameObject> Parents = new List<GameObject>();
 
         void Start()
         {
             var controller = GetComponent<ControllerBase>();
-            controller.GripPressed += GripPressed;
-            controller.MenuPressed += MenuPressed;
-            controller.TriggerPressed += TriggerPressed;
-            controller.TriggerReleased += TriggerReleased;
+            if (controller)
+            {
+                controller.GripPressed += GripPressed;
+                controller.MenuPressed += MenuPressed;
+                controller.TriggerPressed += TriggerPressed;
+                controller.TriggerReleased += TriggerReleased;
+            }
             FileName += ".txt";
         }
         
@@ -46,22 +49,27 @@ namespace Assets.MyProject
 
         private void TriggerPressed()
         {
-            IsGripping = true;
+            IsHoldingTrigger = true;
         }
 
         public void TriggerReleased()
         {
-            IsGripping = false;
+            IsHoldingTrigger = false;
+            if (IsCreating && touchingNode)
+            {
+                touchingNode.IsBranching = true;
+                lastSpawn = touchingNode;
+            }
         }
 
         //unity function
         void Update()
         {
-            if(IsGripping && IsCreating)
+            if(IsHoldingTrigger && IsCreating)
                 Create(transform.position);
         }
 
-        private void Create(Vector3 position, bool isLoading = false)
+        private Node Create(Vector3 position, bool isLoading = false)
         {
             if (lastSpawn == null || Vector3.Distance(position, lastSpawn.transform.position) > 0.1)
             {
@@ -74,6 +82,7 @@ namespace Assets.MyProject
                     Debug.Log(lastSpawn);
                 }
             }
+            return lastSpawn;
         }
 
         private Transform getParentNode()
@@ -109,13 +118,26 @@ namespace Assets.MyProject
                     nodeToRemove.DeleteNode();
                 }
             }
-            if (collider.tag == "Clear")
+            else
             {
-                foreach (var parent in Parents)
+                if (collider.tag == "Clear")
                 {
-                    GameObject.Destroy(parent);
+                    foreach (var parent in Parents)
+                    {
+                        GameObject.Destroy(parent);
+                    }
+                }
+                else
+                {
+                    touchingNode = collider.GetComponent<Node>();
                 }
             }
+
+        }
+
+        private void OnTriggerExit(Collider collider)
+        {
+            touchingNode = null;
         }
 
     }
