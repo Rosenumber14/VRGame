@@ -62,7 +62,7 @@ public class Enemy : HealthTeamAndDamage {
             SetAnimation(Animations.die);
             Died(this);
         }
-        else
+        else if(currentAnimation != Animations.gethit || !animationComponent.isPlaying)
         {
             SetAnimation(Animations.gethit);
         }
